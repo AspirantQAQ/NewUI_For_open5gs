@@ -2,7 +2,7 @@
   "name": "webui-v2",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
+
   "scripts": {
     "dev:server": "NODE_ENV=development node server/index.js",
     "dev:client": "vite",
