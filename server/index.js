@@ -15,6 +15,9 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const csrf = require('lusca').csrf();
 const path = require('path');
+const yaml = require('js-yaml');
+const fsModule = require('fs');
+const pathModule = require('path');
 
 require('./ensure-secret')();
 const secret = process.env.SECRET_KEY;
@@ -43,6 +46,45 @@ mongoose.connect(process.env.DB_URI, {
       }
     });
   }
+
+  // Auto-import YAML configs to MongoDB on startup
+  const NfConfig = require('./models/nf-config');
+  const NF_FILES = {
+    nrf: 'nrf.yaml', scp: 'scp.yaml', amf: 'amf.yaml',
+    smf: 'smf.yaml', upf: 'upf.yaml', ausf: 'ausf.yaml',
+    udm: 'udm.yaml', udr: 'udr.yaml', pcf: 'pcf.yaml',
+    nssf: 'nssf.yaml', bsf: 'bsf.yaml', mme: 'mme.yaml',
+    hss: 'hss.yaml', sgwc: 'sgwc.yaml', sgwu: 'sgwu.yaml',
+    pcrf: 'pcrf.yaml', sepp1: 'sepp1.yaml', sepp2: 'sepp2.yaml'
+  };
+
+  const YAML_BASE = process.env.YAML_CONFIG_PATH || '/etc/open5gs';
+
+  async function initNfConfigs() {
+    for (const [nfType, filename] of Object.entries(NF_FILES)) {
+      const yamlPath = pathModule.join(YAML_BASE, filename);
+      if (fsModule.existsSync(yamlPath)) {
+        const existing = await NfConfig.findOne({ nfType });
+        if (!existing) {
+          const content = fsModule.readFileSync(yamlPath, 'utf8');
+          const config = yaml.load(content);
+          await NfConfig.create({
+            nfType,
+            config,
+            meta: {
+              lastSyncedAt: new Date(),
+              lastModifiedAt: new Date(),
+              lastModifiedBy: 'system-init',
+              yamlPath
+            }
+          });
+          console.log('  Imported ' + nfType + ' from ' + yamlPath);
+        }
+      }
+    }
+  }
+
+  initNfConfigs().catch(err => console.error('NF config init error:', err));
 }).catch(err => {
   console.error('MongoDB connection error:', err);
   process.exit(1);
