@@ -6,14 +6,9 @@ const api = axios.create({
   withCredentials: true,
 });
 
-let csrfCache: string | null = null;
-
 async function getCsrf(): Promise<string> {
-  if (csrfCache) return csrfCache;
   const res = await axios.get('/api/auth/csrf', { withCredentials: true });
-  const token: string = res.data.csrfToken;
-  csrfCache = token;
-  return token;
+  return res.data.csrfToken;
 }
 
 api.interceptors.request.use(async config => {
