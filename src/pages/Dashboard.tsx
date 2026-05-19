@@ -1,10 +1,13 @@
-import { Paper, Typography, Grid, Chip, Box, CircularProgress } from '@mui/material';
+import { Paper, Typography, Grid, Chip, Box, CircularProgress, Button } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import { useNavigate } from 'react-router-dom';
 import { useSyncStatus } from '../hooks/useNfConfig';
 
 export default function Dashboard() {
   const { data: statusList, isLoading } = useSyncStatus();
+  const navigate = useNavigate();
 
   if (isLoading) return <Box sx={{ p: 3 }}><CircularProgress /></Box>;
 
@@ -30,6 +33,15 @@ export default function Dashboard() {
                 color={s.pendingSync ? 'warning' : 'success'}
                 sx={{ mt: 1 }}
               />
+              <Box sx={{ mt: 1 }}>
+                <Button
+                  size="small"
+                  startIcon={<VisibilityIcon />}
+                  onClick={() => navigate(`/config/nf/${s.nfType}`)}
+                >
+                  查看配置
+                </Button>
+              </Box>
             </Paper>
           </Grid>
         ))}

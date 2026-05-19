@@ -12,6 +12,7 @@ import PlmnIdentity from './pages/config/PlmnIdentity';
 import SbiTopology from './pages/config/SbiTopology';
 import SessionUpf from './pages/config/SessionUpf';
 import Epc4g from './pages/config/Epc4g';
+import NfDetail from './pages/config/NfDetail';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const session = useAuthStore(state => state.session);
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="config/sbi" element={<SbiTopology />} />
         <Route path="config/session" element={<SessionUpf />} />
         <Route path="config/epc" element={<Epc4g />} />
+        <Route path="config/nf/:nfType" element={<NfDetail />} />
       </Route>
     </Routes>
   );
