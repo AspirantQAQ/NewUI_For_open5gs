@@ -40,3 +40,8 @@ export async function getSyncStatus(): Promise<SyncStatus[]> {
   const res = await api.get('/config/status');
   return res.data;
 }
+
+export async function getServiceStatus(): Promise<Array<{ nfType: string; service: string; active: boolean; state: string }>> {
+  const res = await api.get('/config/services');
+  return res.data;
+}

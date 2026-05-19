@@ -9,6 +9,14 @@ export function useSyncStatus() {
   });
 }
 
+export function useServiceStatus() {
+  return useQuery({
+    queryKey: ['serviceStatus'],
+    queryFn: configService.getServiceStatus,
+    refetchInterval: 30000,
+  });
+}
+
 export function useNfConfig(nfType: string) {
   return useQuery({
     queryKey: ['nfConfig', nfType],

@@ -265,6 +265,38 @@ router.get('/status', async (req, res) => {
   }
 });
 
+// GET /api/config/services — get service status for all NFs
+router.get('/services', (req, res) => {
+  const serviceMap = {
+    'open5gs-nrfd': 'nrf', 'open5gs-scpd': 'scp', 'open5gs-amfd': 'amf',
+    'open5gs-smfd': 'smf', 'open5gs-upfd': 'upf', 'open5gs-ausfd': 'ausf',
+    'open5gs-udmd': 'udm', 'open5gs-udrd': 'udr', 'open5gs-pcfd': 'pcf',
+    'open5gs-nssfd': 'nssf', 'open5gs-bsfd': 'bsf', 'open5gs-mmed': 'mme',
+    'open5gs-hssd': 'hss', 'open5gs-sgwcd': 'sgwc', 'open5gs-sgwud': 'sgwu',
+    'open5gs-pcrfd': 'pcrf', 'open5gs-seppd': 'sepp',
+  };
+  const entries = Object.entries(serviceMap);
+  let done = 0;
+  const results = [];
+
+  entries.forEach(([svc, nfType]) => {
+    exec('systemctl is-active ' + svc + ' 2>/dev/null', (err, stdout) => {
+      const state = stdout.toString().trim();
+      results.push({
+        nfType,
+        service: svc,
+        active: state === 'active',
+        state,
+      });
+      done++;
+      if (done === entries.length) {
+        results.sort((a, b) => a.nfType.localeCompare(b.nfType));
+        res.json(results);
+      }
+    });
+  });
+});
+
 // POST /api/config/restart — restart all open5gs services
 router.post('/restart', (req, res) => {
   const { sudoPassword } = req.body;

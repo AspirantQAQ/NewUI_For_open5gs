@@ -7,7 +7,7 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
 import { useNavigate } from 'react-router-dom';
-import { useSyncStatus, useSyncNf, useSyncAll, useRestartServices } from '../hooks/useNfConfig';
+import { useSyncStatus, useSyncNf, useSyncAll, useRestartServices, useServiceStatus } from '../hooks/useNfConfig';
 
 function SudoDialog({ open, title, hint, onConfirm, onCancel, loading }: {
   open: boolean;
@@ -45,6 +45,7 @@ function SudoDialog({ open, title, hint, onConfirm, onCancel, loading }: {
 
 export default function Dashboard() {
   const { data: statusList, isLoading } = useSyncStatus();
+  const { data: svcStatus } = useServiceStatus();
   const navigate = useNavigate();
   const syncAllMut = useSyncAll();
   const restartMut = useRestartServices();
@@ -114,7 +115,7 @@ export default function Dashboard() {
 
       <Grid container spacing={2}>
         {statusList?.map(s => (
-          <NfCard key={s.nfType} nfType={s.nfType} pendingSync={s.pendingSync} navigate={navigate} />
+          <NfCard key={s.nfType} nfType={s.nfType} pendingSync={s.pendingSync} svcActive={svcStatus?.find(v => v.nfType === s.nfType)?.active} navigate={navigate} />
         ))}
       </Grid>
 
@@ -148,9 +149,10 @@ export default function Dashboard() {
   );
 }
 
-function NfCard({ nfType, pendingSync, navigate }: {
+function NfCard({ nfType, pendingSync, svcActive, navigate }: {
   nfType: string;
   pendingSync: boolean;
+  svcActive?: boolean;
   navigate: ReturnType<typeof useNavigate>;
 }) {
   const syncMut = useSyncNf(nfType);
@@ -171,13 +173,21 @@ function NfCard({ nfType, pendingSync, navigate }: {
       <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
         <Paper variant="outlined" sx={{ p: 2 }}>
           <Typography sx={{ fontWeight: 'bold' }}>{nfType.toUpperCase()}</Typography>
-          <Chip
-            size="small"
-            icon={pendingSync ? <WarningIcon /> : <CheckCircleIcon />}
-            label={pendingSync ? '待同步' : '已同步'}
-            color={pendingSync ? 'warning' : 'success'}
-            sx={{ mt: 1 }}
-          />
+          <Box sx={{ display: 'flex', gap: 0.5, mt: 1, flexWrap: 'wrap' }}>
+            <Chip
+              size="small"
+              icon={svcActive ? <CheckCircleIcon /> : <WarningIcon />}
+              label={svcActive ? '运行中' : svcActive === false ? '已停止' : '检测中'}
+              color={svcActive ? 'success' : svcActive === false ? 'error' : 'default'}
+            />
+            <Chip
+              size="small"
+              icon={pendingSync ? <WarningIcon /> : <CheckCircleIcon />}
+              label={pendingSync ? '待同步' : '已同步'}
+              color={pendingSync ? 'warning' : 'success'}
+              variant="outlined"
+            />
+          </Box>
           <Box sx={{ mt: 1, display: 'flex', gap: 0.5 }}>
             <Button
               size="small"
