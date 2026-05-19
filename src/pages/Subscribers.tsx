@@ -15,7 +15,6 @@ import ClearIcon from '@mui/icons-material/Clear';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
   useSubscribers, useCreateSubscriber, useUpdateSubscriber, useDeleteSubscriber,
-  useProfiles,
 } from '../hooks/useDb';
 import type { Subscriber } from '../types/db';
 
@@ -51,7 +50,6 @@ function formatAmbr(ambr?: { value: number; unit: number }) {
 
 export default function Subscribers() {
   const { data: subscribers = [], isLoading } = useSubscribers();
-  const { data: profiles = [] } = useProfiles();
   const createMut = useCreateSubscriber();
   const updateMut = useUpdateSubscriber();
   const deleteMut = useDeleteSubscriber();
