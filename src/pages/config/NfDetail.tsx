@@ -1,16 +1,12 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Box, Typography, Paper, Accordion, AccordionSummary,
-  AccordionDetails, Table, TableBody, TableCell, TableContainer,
-  TableRow, Button, CircularProgress, Chip,
+  Box, Typography, Paper, Button, CircularProgress, Chip, Divider,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import EditIcon from '@mui/icons-material/Edit';
-import { useNfConfig } from '../../hooks/useNfConfig';
-import { useSyncStatus } from '../../hooks/useNfConfig';
+import { useNfConfig, useSyncStatus } from '../../hooks/useNfConfig';
 
 function isObject(val: unknown): val is Record<string, unknown> {
   return val !== null && typeof val === 'object' && !Array.isArray(val);
@@ -35,7 +31,7 @@ function ConfigValue({ value, depth = 0 }: { value: unknown; depth?: number }) {
 
   if (Array.isArray(value)) {
     if (value.length === 0) {
-      return <Typography variant="body2" sx={{ color: 'text.disabled' }}>[] (empty)</Typography>;
+      return <Typography variant="body2" sx={{ color: 'text.disabled' }}>[]</Typography>;
     }
     if (value.every(v => typeof v !== 'object')) {
       return (
@@ -45,12 +41,12 @@ function ConfigValue({ value, depth = 0 }: { value: unknown; depth?: number }) {
       );
     }
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
         {value.map((item, i) => (
-          <Paper key={i} variant="outlined" sx={{ p: 1 }}>
-            <Typography variant="caption" color="text.secondary">[{i}]</Typography>
+          <Box key={i} sx={{ pl: 1, borderLeft: '2px solid', borderColor: 'divider' }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>[{i}]</Typography>
             {isObject(item) ? <ConfigObject obj={item} depth={depth + 1} /> : <ConfigValue value={item} depth={depth + 1} />}
-          </Paper>
+          </Box>
         ))}
       </Box>
     );
@@ -66,46 +62,32 @@ function ConfigValue({ value, depth = 0 }: { value: unknown; depth?: number }) {
 function ConfigObject({ obj, depth = 0 }: { obj: Record<string, unknown>; depth?: number }) {
   const entries = Object.entries(obj);
 
-  if (depth <= 1) {
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-        {entries.map(([key, val]) => (
-          <Accordion key={key} defaultExpanded={depth === 0}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography sx={{ fontWeight: 'bold' }}>{key}</Typography>
-              {!isObject(val) && !Array.isArray(val) && (
-                <Typography variant="body2" sx={{ ml: 2, color: 'text.secondary' }}>
-                  {val === null ? '—' : String(val)}
-                </Typography>
-              )}
-              {Array.isArray(val) && (
-                <Typography variant="body2" sx={{ ml: 2, color: 'text.secondary' }}>
-                  [{val.length} items]
-                </Typography>
-              )}
-            </AccordionSummary>
-            <AccordionDetails>
-              <ConfigValue value={val} depth={depth} />
-            </AccordionDetails>
-          </Accordion>
-        ))}
-      </Box>
-    );
-  }
-
   return (
-    <TableContainer>
-      <Table size="small">
-        <TableBody>
-          {entries.map(([key, val]) => (
-            <TableRow key={key}>
-              <TableCell sx={{ fontWeight: 'bold', width: '30%', verticalAlign: 'top' }}>{key}</TableCell>
-              <TableCell><ConfigValue value={val} depth={depth} /></TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+      {entries.map(([key, val], i) => {
+        const nested = isObject(val) || Array.isArray(val);
+        return (
+          <Box key={key}>
+            {i > 0 && <Divider sx={{ my: nested ? 1 : 0.25 }} />}
+            <Box sx={{ display: 'flex', gap: 1, alignItems: nested ? 'flex-start' : 'center', py: 0.25 }}>
+              <Typography variant="body2" sx={{
+                fontWeight: depth === 0 ? 'bold' : 500,
+                minWidth: depth === 0 ? 140 : 100,
+                pt: nested ? 0.75 : 0,
+                flexShrink: 0,
+                fontSize: depth === 0 ? 13 : 12,
+                color: depth === 0 ? 'text.primary' : 'text.secondary',
+              }}>
+                {key}
+              </Typography>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <ConfigValue value={val} depth={depth} />
+              </Box>
+            </Box>
+          </Box>
+        );
+      })}
+    </Box>
   );
 }
 
@@ -123,10 +105,10 @@ export default function NfDetail() {
   if (!config) return <Typography>No config found for {nfType}</Typography>;
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-        <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/')}>返回</Button>
-        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+    <Box sx={{ p: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+        <Button size="small" startIcon={<ArrowBackIcon />} onClick={() => navigate('/')}>返回</Button>
+        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
           {nfType.toUpperCase()} 配置
         </Typography>
         {syncStatus && (
@@ -137,9 +119,10 @@ export default function NfDetail() {
             color={syncStatus.pendingSync ? 'warning' : 'success'}
           />
         )}
+        <Box sx={{ flex: 1 }} />
         <Button
-          variant="outlined"
           size="small"
+          variant="contained"
           startIcon={<EditIcon />}
           onClick={() => navigate(`/config/nf/${nfType}/edit`)}
         >
@@ -147,7 +130,7 @@ export default function NfDetail() {
         </Button>
       </Box>
 
-      <Paper sx={{ p: 2 }}>
+      <Paper sx={{ p: 1.5 }}>
         <ConfigObject obj={config.config as Record<string, unknown>} depth={0} />
       </Paper>
     </Box>
