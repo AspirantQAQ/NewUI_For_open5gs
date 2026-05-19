@@ -26,6 +26,11 @@ export async function syncAllNfConfigs(): Promise<{ results: SyncResult[] }> {
   return res.data;
 }
 
+export async function restartServices(): Promise<{ success: boolean; message: string }> {
+  const res = await api.post('/config/restart');
+  return res.data;
+}
+
 export async function importNfConfig(nfType: string): Promise<NfConfig> {
   const res = await api.post(`/config/import/${nfType}`);
   return res.data;

@@ -4,6 +4,7 @@ const NfConfig = require('../models/nf-config');
 const yaml = require('js-yaml');
 const fs = require('fs');
 const path = require('path');
+const { exec } = require('child_process');
 
 const YAML_BASE_PATH = '/etc/open5gs';
 
@@ -198,6 +199,24 @@ router.get('/status', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// POST /api/config/restart — restart all open5gs services
+router.post('/restart', (req, res) => {
+  const services = [
+    'open5gs-mmed', 'open5gs-sgwcd', 'open5gs-smfd', 'open5gs-amfd',
+    'open5gs-sgwud', 'open5gs-upfd', 'open5gs-hssd', 'open5gs-pcrfd',
+    'open5gs-nrfd', 'open5gs-scpd', 'open5gs-seppd', 'open5gs-ausfd',
+    'open5gs-udmd', 'open5gs-pcfd', 'open5gs-nssfd', 'open5gs-bsfd',
+    'open5gs-udrd', 'open5gs-webui',
+  ];
+  const cmd = 'sudo systemctl restart ' + services.join(' ');
+  exec(cmd, (err, stdout, stderr) => {
+    if (err) {
+      return res.status(500).json({ error: err.message, stderr: stderr.toString() });
+    }
+    res.json({ success: true, message: 'All services restarted' });
+  });
 });
 
 module.exports = router;

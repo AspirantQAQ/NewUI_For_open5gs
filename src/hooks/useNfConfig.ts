@@ -48,3 +48,9 @@ export function useSyncAll() {
     },
   });
 }
+
+export function useRestartServices() {
+  return useMutation({
+    mutationFn: configService.restartServices,
+  });
+}
