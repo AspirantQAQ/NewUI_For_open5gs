@@ -2,14 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Paper, TextField, Button, CircularProgress, Chip,
-  Switch, FormControlLabel, IconButton, Alert, Divider,
+  Switch, FormControlLabel, Alert, Divider,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import SaveIcon from '@mui/icons-material/Save';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
 import { useNfConfig, useUpdateNfConfig, useSyncStatus } from '../../hooks/useNfConfig';
 
 function isObject(val: unknown): val is Record<string, unknown> {
@@ -18,23 +16,6 @@ function isObject(val: unknown): val is Record<string, unknown> {
 
 function cloneDeep(val: unknown): unknown {
   return JSON.parse(JSON.stringify(val));
-}
-
-function DeleteBtn({ onClick }: { onClick: () => void }) {
-  return (
-    <IconButton
-      size="small"
-      onClick={onClick}
-      sx={{
-        p: 0.25,
-        opacity: 0.15,
-        transition: 'opacity 0.2s',
-        '&:hover': { opacity: 1 },
-      }}
-    >
-      <DeleteIcon sx={{ fontSize: 14 }} />
-    </IconButton>
-  );
 }
 
 function EditorValue({
@@ -88,12 +69,7 @@ function EditorValue({
 
   if (Array.isArray(value)) {
     if (value.length === 0) {
-      return (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <Typography variant="body2" sx={{ color: 'text.disabled', fontSize: 12 }}>[]</Typography>
-          <IconButton size="small" onClick={() => onChange([{}])}><AddIcon fontSize="small" /></IconButton>
-        </Box>
-      );
+      return <Typography variant="body2" sx={{ color: 'text.disabled', fontSize: 12 }}>[]</Typography>;
     }
     if (value.every(v => typeof v !== 'object' || v === null)) {
       return (
@@ -114,14 +90,7 @@ function EditorValue({
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
         {value.map((item, i) => (
           <Box key={i} sx={{ pl: 1, borderLeft: '2px solid', borderColor: 'divider' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.25 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>[{i}]</Typography>
-              <DeleteBtn onClick={() => {
-                const newArr = [...value];
-                newArr.splice(i, 1);
-                onChange(newArr);
-              }} />
-            </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>[{i}]</Typography>
             {isObject(item) ? (
               <EditorObject obj={item} onChange={newObj => {
                 const newArr = [...value];
@@ -137,9 +106,6 @@ function EditorValue({
             )}
           </Box>
         ))}
-        <IconButton size="small" onClick={() => onChange([...value, {}])} sx={{ alignSelf: 'flex-start' }}>
-          <AddIcon fontSize="small" />
-        </IconButton>
       </Box>
     );
   }
@@ -166,17 +132,6 @@ function EditorObject({
     onChange({ ...obj, [key]: val });
   }, [obj, onChange]);
 
-  const removeKey = useCallback((key: string) => {
-    const newObj = { ...obj };
-    delete newObj[key];
-    onChange(newObj);
-  }, [obj, onChange]);
-
-  const addKey = useCallback(() => {
-    const newKey = `new_key_${Object.keys(obj).length}`;
-    onChange({ ...obj, [newKey]: '' });
-  }, [obj, onChange]);
-
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
       {entries.map(([key, val], i) => {
@@ -198,16 +153,10 @@ function EditorObject({
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <EditorValue value={val} onChange={newVal => updateKey(key, newVal)} depth={depth} />
               </Box>
-              {depth > 0 && <DeleteBtn onClick={() => removeKey(key)} />}
             </Box>
           </Box>
         );
       })}
-      {depth > 0 && (
-        <Button size="small" startIcon={<AddIcon />} onClick={addKey} sx={{ alignSelf: 'flex-start', mt: 0.5, fontSize: 12 }}>
-          添加字段
-        </Button>
-      )}
     </Box>
   );
 }
