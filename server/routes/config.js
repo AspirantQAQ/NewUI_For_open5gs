@@ -260,6 +260,52 @@ router.post('/import/:nfType', async (req, res) => {
   }
 });
 
+// POST /api/config/import-all — re-import all YAML files to MongoDB
+router.post('/import-all', async (req, res) => {
+  try {
+    const NF_FILES = {
+      nrf: 'nrf.yaml', scp: 'scp.yaml', amf: 'amf.yaml',
+      smf: 'smf.yaml', upf: 'upf.yaml', ausf: 'ausf.yaml',
+      udm: 'udm.yaml', udr: 'udr.yaml', pcf: 'pcf.yaml',
+      nssf: 'nssf.yaml', bsf: 'bsf.yaml', mme: 'mme.yaml',
+      hss: 'hss.yaml', sgwc: 'sgwc.yaml', sgwu: 'sgwu.yaml',
+      pcrf: 'pcrf.yaml', sepp1: 'sepp1.yaml', sepp2: 'sepp2.yaml'
+    };
+    const yamlBase = process.env.YAML_CONFIG_PATH || '/etc/open5gs';
+    const results = [];
+
+    for (const [nfType, filename] of Object.entries(NF_FILES)) {
+      const yamlPath = path.join(yamlBase, filename);
+      try {
+        if (!fs.existsSync(yamlPath)) continue;
+        const content = fs.readFileSync(yamlPath, 'utf8');
+        const config = yaml.load(preserveLeadingZeros(content));
+        await NfConfig.findOneAndUpdate(
+          { nfType },
+          {
+            nfType,
+            config,
+            meta: {
+              lastSyncedAt: new Date(),
+              lastModifiedAt: new Date(),
+              lastModifiedBy: req.user?.username || 'import-all',
+              yamlPath,
+            }
+          },
+          { upsert: true, new: true }
+        );
+        results.push({ nfType, success: true });
+      } catch (e) {
+        results.push({ nfType, success: false, error: e.message });
+      }
+    }
+
+    res.json({ results });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/config/status — get sync status for all NFs
 router.get('/status', async (req, res) => {
   try {

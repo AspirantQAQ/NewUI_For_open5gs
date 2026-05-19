@@ -1,5 +1,15 @@
 process.env.DB_URI = process.env.DB_URI || 'mongodb://127.0.0.1/open5gs';
 
+const NF_FILES = {
+  nrf: 'nrf.yaml', scp: 'scp.yaml', amf: 'amf.yaml',
+  smf: 'smf.yaml', upf: 'upf.yaml', ausf: 'ausf.yaml',
+  udm: 'udm.yaml', udr: 'udr.yaml', pcf: 'pcf.yaml',
+  nssf: 'nssf.yaml', bsf: 'bsf.yaml', mme: 'mme.yaml',
+  hss: 'hss.yaml', sgwc: 'sgwc.yaml', sgwu: 'sgwu.yaml',
+  pcrf: 'pcrf.yaml', sepp1: 'sepp1.yaml', sepp2: 'sepp2.yaml'
+};
+const YAML_BASE = process.env.YAML_CONFIG_PATH || '/etc/open5gs';
+
 const _hostname = process.env.HOSTNAME || 'localhost';
 const port = process.env.PORT || 9999;
 const dev = process.env.NODE_ENV !== 'production';
@@ -47,16 +57,6 @@ mongoose.connect(process.env.DB_URI, {
 
   // Auto-import YAML configs to MongoDB on startup
   const NfConfig = require('./models/nf-config');
-  const NF_FILES = {
-    nrf: 'nrf.yaml', scp: 'scp.yaml', amf: 'amf.yaml',
-    smf: 'smf.yaml', upf: 'upf.yaml', ausf: 'ausf.yaml',
-    udm: 'udm.yaml', udr: 'udr.yaml', pcf: 'pcf.yaml',
-    nssf: 'nssf.yaml', bsf: 'bsf.yaml', mme: 'mme.yaml',
-    hss: 'hss.yaml', sgwc: 'sgwc.yaml', sgwu: 'sgwu.yaml',
-    pcrf: 'pcrf.yaml', sepp1: 'sepp1.yaml', sepp2: 'sepp2.yaml'
-  };
-
-  const YAML_BASE = process.env.YAML_CONFIG_PATH || '/etc/open5gs';
 
   async function initNfConfigs() {
     for (const [nfType, filename] of Object.entries(NF_FILES)) {
@@ -86,6 +86,66 @@ mongoose.connect(process.env.DB_URI, {
   }
 
   initNfConfigs().catch(err => console.error('NF config init error:', err));
+
+  // Watch YAML files for external changes and auto-import to MongoDB
+  const debounceTimers = {};
+  function getNfTypeByFilename(filename) {
+    for (const [nfType, fname] of Object.entries(NF_FILES)) {
+      if (fname === filename) return nfType;
+    }
+    return null;
+  }
+  function importYamlToDb(nfType) {
+    const filename = NF_FILES[nfType];
+    if (!filename) return;
+    const yamlPath = pathModule.join(YAML_BASE, filename);
+    try {
+      if (!fsModule.existsSync(yamlPath)) return;
+      const content = fsModule.readFileSync(yamlPath, 'utf8');
+      const fixed = content.replace(/^( *)(\S+:\s+)(0\d+)\s*$/gm, function(m, indent, key, val) {
+        return indent + key + "'" + val + "'";
+      });
+      const config = yaml.load(fixed);
+      NfConfig.findOneAndUpdate(
+        { nfType },
+        {
+          nfType,
+          config,
+          meta: {
+            lastSyncedAt: new Date(),
+            lastModifiedAt: new Date(),
+            lastModifiedBy: 'file-watcher',
+            yamlPath,
+          }
+        },
+        { upsert: true, new: true }
+      ).then(() => {
+        console.log('  Auto-imported ' + nfType + ' from YAML file change');
+      }).catch(err => {
+        console.error('  Auto-import error for ' + nfType + ':', err.message);
+      });
+    } catch (e) {
+      console.error('  Auto-import parse error for ' + nfType + ':', e.message);
+    }
+  }
+
+  try {
+    if (fsModule.existsSync(YAML_BASE)) {
+      fsModule.watch(YAML_BASE, function(eventType, filename) {
+        const nfType = getNfTypeByFilename(filename);
+        if (!nfType) return;
+        // Debounce: wait 1s after last change before importing
+        if (debounceTimers[nfType]) clearTimeout(debounceTimers[nfType]);
+        debounceTimers[nfType] = setTimeout(() => {
+          importYamlToDb(nfType);
+          delete debounceTimers[nfType];
+        }, 1000);
+      });
+      console.log('  Watching ' + YAML_BASE + ' for YAML file changes');
+    }
+  } catch (e) {
+    console.error('  Failed to watch YAML directory:', e.message);
+  }
 }).catch(err => {
   console.error('MongoDB connection error:', err);
   process.exit(1);

@@ -62,3 +62,14 @@ export function useRestartServices() {
     mutationFn: (sudoPassword: string) => configService.restartServices(sudoPassword),
   });
 }
+
+export function useImportAll() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: configService.importAllNfConfigs,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['syncStatus'] });
+      queryClient.invalidateQueries({ queryKey: ['nfConfig'] });
+    },
+  });
+}

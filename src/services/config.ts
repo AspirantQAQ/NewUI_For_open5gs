@@ -36,6 +36,11 @@ export async function importNfConfig(nfType: string): Promise<NfConfig> {
   return res.data;
 }
 
+export async function importAllNfConfigs(): Promise<{ results: SyncResult[] }> {
+  const res = await api.post('/config/import-all');
+  return res.data;
+}
+
 export async function getSyncStatus(): Promise<SyncStatus[]> {
   const res = await api.get('/config/status');
   return res.data;

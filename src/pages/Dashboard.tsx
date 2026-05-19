@@ -7,7 +7,7 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
 import { useNavigate } from 'react-router-dom';
-import { useSyncStatus, useSyncNf, useSyncAll, useRestartServices, useServiceStatus } from '../hooks/useNfConfig';
+import { useSyncStatus, useSyncNf, useSyncAll, useRestartServices, useServiceStatus, useImportAll } from '../hooks/useNfConfig';
 
 function SudoDialog({ open, title, hint, onConfirm, onCancel, loading }: {
   open: boolean;
@@ -49,6 +49,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const syncAllMut = useSyncAll();
   const restartMut = useRestartServices();
+  const importAllMut = useImportAll();
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [dialog, setDialog] = useState<'syncAll' | 'restart' | null>(null);
 
@@ -104,6 +105,25 @@ export default function Dashboard() {
           onClick={() => setDialog('restart')}
         >
           {restartMut.isPending ? '重启中...' : '重启服务'}
+        </Button>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<SyncIcon />}
+          disabled={importAllMut.isPending}
+          onClick={() => {
+            importAllMut.mutate(undefined, {
+              onSuccess: (data) => {
+                const failed = data.results?.filter((r: any) => !r.success).length || 0;
+                setMsg(failed > 0
+                  ? { type: 'error', text: `${failed} 个 NF 导入失败` }
+                  : { type: 'success', text: '已从 YAML 文件重新导入所有 NF 配置' });
+              },
+              onError: (e: any) => setMsg({ type: 'error', text: e.response?.data?.error || e.message }),
+            });
+          }}
+        >
+          {importAllMut.isPending ? '导入中...' : '重新导入'}
         </Button>
       </Box>
 
