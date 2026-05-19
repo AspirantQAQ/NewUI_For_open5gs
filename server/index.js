@@ -65,7 +65,10 @@ mongoose.connect(process.env.DB_URI, {
         const existing = await NfConfig.findOne({ nfType });
         if (!existing) {
           const content = fsModule.readFileSync(yamlPath, 'utf8');
-          const config = yaml.load(content);
+          const fixed = content.replace(/^( *)(\S+:\s+)(0\d+)\s*$/gm, function(m, indent, key, val) {
+            return indent + key + "'" + val + "'";
+          });
+          const config = yaml.load(fixed);
           await NfConfig.create({
             nfType,
             config,

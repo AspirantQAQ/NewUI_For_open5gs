@@ -94,9 +94,9 @@ export default function Epc4g() {
       },
     };
     base.gummei = {
-      plmn_id: { mcc: parseInt(mmeMcc) || 0, mnc: parseInt(mmeMnc) || 0 },
-      mme_gid: parseInt(mmeGid) || 0,
-      mme_code: parseInt(mmeCode) || 0,
+      plmn_id: { mcc: mmeMcc, mnc: mmeMnc },
+      mme_gid: mmeGid,
+      mme_code: mmeCode,
     };
     base.mme_name = mmeName;
 

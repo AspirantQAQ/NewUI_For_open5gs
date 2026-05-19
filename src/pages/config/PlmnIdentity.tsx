@@ -111,7 +111,7 @@ export default function PlmnIdentity() {
         mcc,
         mnc,
       },
-      tac: parseInt(tac) || 0,
+      tac: tac,
     };
     updated.plmn_list = plmnList;
     delete updated.plmnlist;

@@ -7,6 +7,12 @@ const YAML_DUMP_OPTS = {
   lineWidth: -1,
   quotingType: "'",
 };
+
+function preserveLeadingZeros(content) {
+  return content.replace(/^( *)(\S+:\s+)(0\d+)\s*$/gm, function(match, indent, key, val) {
+    return indent + key + "'" + val + "'";
+  });
+}
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
@@ -231,7 +237,7 @@ router.post('/import/:nfType', async (req, res) => {
     }
 
     const content = fs.readFileSync(yamlPath, 'utf8');
-    const config = yaml.load(content);
+    const config = yaml.load(preserveLeadingZeros(content));
 
     const updated = await NfConfig.findOneAndUpdate(
       { nfType },
