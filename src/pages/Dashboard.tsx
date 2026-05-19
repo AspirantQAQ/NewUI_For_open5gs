@@ -2,6 +2,7 @@ import { Paper, Typography, Grid, Chip, Box, CircularProgress, Button } from '@m
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import EditIcon from '@mui/icons-material/Edit';
 import { useNavigate } from 'react-router-dom';
 import { useSyncStatus } from '../hooks/useNfConfig';
 
@@ -33,13 +34,20 @@ export default function Dashboard() {
                 color={s.pendingSync ? 'warning' : 'success'}
                 sx={{ mt: 1 }}
               />
-              <Box sx={{ mt: 1 }}>
+              <Box sx={{ mt: 1, display: 'flex', gap: 0.5 }}>
                 <Button
                   size="small"
                   startIcon={<VisibilityIcon />}
                   onClick={() => navigate(`/config/nf/${s.nfType}`)}
                 >
-                  查看配置
+                  查看
+                </Button>
+                <Button
+                  size="small"
+                  startIcon={<EditIcon />}
+                  onClick={() => navigate(`/config/nf/${s.nfType}/edit`)}
+                >
+                  编辑
                 </Button>
               </Box>
             </Paper>

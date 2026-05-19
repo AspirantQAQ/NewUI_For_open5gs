@@ -8,6 +8,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
+import EditIcon from '@mui/icons-material/Edit';
 import { useNfConfig } from '../../hooks/useNfConfig';
 import { useSyncStatus } from '../../hooks/useNfConfig';
 
@@ -136,6 +137,14 @@ export default function NfDetail() {
             color={syncStatus.pendingSync ? 'warning' : 'success'}
           />
         )}
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<EditIcon />}
+          onClick={() => navigate(`/config/nf/${nfType}/edit`)}
+        >
+          编辑
+        </Button>
       </Box>
 
       <Paper sx={{ p: 2 }}>
