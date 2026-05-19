@@ -1,12 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Box, Typography, Paper, Accordion, AccordionSummary,
-  AccordionDetails, TextField, Button, CircularProgress, Chip,
-  Switch, FormControlLabel, IconButton, Alert,
+  Box, Typography, Paper, TextField, Button, CircularProgress, Chip,
+  Switch, FormControlLabel, IconButton, Alert, Divider,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import SaveIcon from '@mui/icons-material/Save';
@@ -36,13 +34,17 @@ function EditorValue({
       <TextField
         size="small" placeholder="null"
         onChange={e => onChange(e.target.value || null)}
-        sx={{ minWidth: 200 }}
+        sx={{ minWidth: 180 }}
       />
     );
   }
 
   if (typeof value === 'boolean') {
-    return <FormControlLabel control={<Switch checked={value} onChange={e => onChange((e.target as HTMLInputElement).checked)} />} label={value ? 'true' : 'false'} />;
+    return <FormControlLabel
+      label={value ? 'true' : 'false'}
+      control={<Switch checked={value} size="small" onChange={e => onChange((e.target as HTMLInputElement).checked)} />}
+      sx={{ m: 0 }}
+    />;
   }
 
   if (typeof value === 'number') {
@@ -50,8 +52,8 @@ function EditorValue({
       <TextField
         size="small" type="number" value={value}
         onChange={e => onChange(Number(e.target.value))}
-        sx={{ minWidth: 200 }}
-        slotProps={{ htmlInput: { sx: { fontFamily: 'monospace' } } }}
+        sx={{ minWidth: 180 }}
+        slotProps={{ htmlInput: { sx: { fontFamily: 'monospace', py: 0.5 } } }}
       />
     );
   }
@@ -62,7 +64,7 @@ function EditorValue({
         size="small" value={value}
         onChange={e => onChange(e.target.value)}
         fullWidth
-        slotProps={{ htmlInput: { sx: { fontFamily: 'monospace' } } }}
+        slotProps={{ htmlInput: { sx: { fontFamily: 'monospace', py: 0.5 } } }}
       />
     );
   }
@@ -70,9 +72,9 @@ function EditorValue({
   if (Array.isArray(value)) {
     if (value.length === 0) {
       return (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2" sx={{ color: 'text.disabled' }}>[] (empty)</Typography>
-          <IconButton size="small" onClick={() => onChange([{}])}><AddIcon /></IconButton>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Typography variant="body2" sx={{ color: 'text.disabled', fontSize: 12 }}>[]</Typography>
+          <IconButton size="small" onClick={() => onChange([{}])}><AddIcon fontSize="small" /></IconButton>
         </Box>
       );
     }
@@ -87,22 +89,22 @@ function EditorValue({
           }))}
           fullWidth
           helperText="逗号分隔"
-          slotProps={{ htmlInput: { sx: { fontFamily: 'monospace' } } }}
+          slotProps={{ htmlInput: { sx: { fontFamily: 'monospace', py: 0.5 } } }}
         />
       );
     }
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
         {value.map((item, i) => (
-          <Paper key={i} variant="outlined" sx={{ p: 1.5 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-              <Typography variant="caption" color="text.secondary">[{i}]</Typography>
-              <IconButton size="small" onClick={() => {
+          <Box key={i} sx={{ pl: 1, borderLeft: '2px solid', borderColor: 'divider' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>[{i}]</Typography>
+              <IconButton size="small" sx={{ p: 0.25 }} onClick={() => {
                 const newArr = [...value];
                 newArr.splice(i, 1);
                 onChange(newArr);
               }}>
-                <DeleteIcon fontSize="small" />
+                <DeleteIcon sx={{ fontSize: 14 }} />
               </IconButton>
             </Box>
             {isObject(item) ? (
@@ -118,11 +120,11 @@ function EditorValue({
                 onChange(newArr);
               }} depth={depth + 1} />
             )}
-          </Paper>
+          </Box>
         ))}
-        <Button size="small" startIcon={<AddIcon />} onClick={() => onChange([...value, {}])}>
-          添加项
-        </Button>
+        <IconButton size="small" onClick={() => onChange([...value, {}])} sx={{ alignSelf: 'flex-start' }}>
+          <AddIcon fontSize="small" />
+        </IconButton>
       </Box>
     );
   }
@@ -160,49 +162,37 @@ function EditorObject({
     onChange({ ...obj, [newKey]: '' });
   }, [obj, onChange]);
 
-  if (depth <= 1) {
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-        {entries.map(([key, val]) => (
-          <Accordion key={key} defaultExpanded={depth === 0}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography sx={{ fontWeight: 'bold' }}>{key}</Typography>
-              {!isObject(val) && !Array.isArray(val) && (
-                <Typography variant="body2" sx={{ ml: 2, color: 'text.secondary' }}>
-                  {val === null ? 'null' : String(val)}
-                </Typography>
-              )}
-              {Array.isArray(val) && (
-                <Typography variant="body2" sx={{ ml: 2, color: 'text.secondary' }}>
-                  [{val.length} items]
-                </Typography>
-              )}
-            </AccordionSummary>
-            <AccordionDetails>
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
-                <IconButton size="small" onClick={() => removeKey(key)}><DeleteIcon fontSize="small" /></IconButton>
-              </Box>
-              <EditorValue value={val} onChange={newVal => updateKey(key, newVal)} depth={depth} />
-            </AccordionDetails>
-          </Accordion>
-        ))}
-        <Button size="small" startIcon={<AddIcon />} onClick={addKey}>添加字段</Button>
-      </Box>
-    );
-  }
-
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-      {entries.map(([key, val]) => (
-        <Box key={key} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
-          <Typography variant="body2" sx={{ fontWeight: 'bold', minWidth: 120, pt: 1, flexShrink: 0 }}>{key}</Typography>
-          <Box sx={{ flex: 1 }}>
-            <EditorValue value={val} onChange={newVal => updateKey(key, newVal)} depth={depth} />
+    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+      {entries.map(([key, val], i) => {
+        const nested = isObject(val) || Array.isArray(val);
+        return (
+          <Box key={key}>
+            {i > 0 && <Divider sx={{ my: nested ? 1 : 0.25 }} />}
+            <Box sx={{ display: 'flex', gap: 1, alignItems: nested ? 'flex-start' : 'center', py: 0.25 }}>
+              <Typography variant="body2" sx={{
+                fontWeight: depth === 0 ? 'bold' : 500,
+                minWidth: depth === 0 ? 140 : 100,
+                pt: nested ? 0.75 : 0,
+                flexShrink: 0,
+                fontSize: depth === 0 ? 13 : 12,
+                color: depth === 0 ? 'text.primary' : 'text.secondary',
+              }}>
+                {key}
+              </Typography>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <EditorValue value={val} onChange={newVal => updateKey(key, newVal)} depth={depth} />
+              </Box>
+              <IconButton size="small" sx={{ p: 0.25, mt: nested ? 0.5 : 0 }} onClick={() => removeKey(key)}>
+                <DeleteIcon sx={{ fontSize: 14 }} />
+              </IconButton>
+            </Box>
           </Box>
-          <IconButton size="small" onClick={() => removeKey(key)} sx={{ mt: 0.5 }}><DeleteIcon fontSize="small" /></IconButton>
-        </Box>
-      ))}
-      <Button size="small" startIcon={<AddIcon />} onClick={addKey}>添加字段</Button>
+        );
+      })}
+      <Button size="small" startIcon={<AddIcon />} onClick={addKey} sx={{ alignSelf: 'flex-start', mt: 0.5, fontSize: 12 }}>
+        添加字段
+      </Button>
     </Box>
   );
 }
@@ -247,10 +237,10 @@ export default function NfEditor() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-        <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/')}>返回</Button>
-        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+    <Box sx={{ p: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+        <Button size="small" startIcon={<ArrowBackIcon />} onClick={() => navigate('/')}>返回</Button>
+        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
           编辑 {nfType.toUpperCase()} 配置
         </Typography>
         {syncStatus && (
@@ -261,19 +251,17 @@ export default function NfEditor() {
             color={syncStatus.pendingSync ? 'warning' : 'success'}
           />
         )}
-      </Box>
-
-      {saved && <Alert severity="success" sx={{ mb: 2 }}>配置已保存到 MongoDB，点击「同步」写入 YAML 文件</Alert>}
-
-      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-        <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSave} disabled={updateMut.isPending}>
+        <Box sx={{ flex: 1 }} />
+        <Button size="small" onClick={() => navigate(`/config/nf/${nfType}`)}>查看模式</Button>
+        <Button size="small" onClick={handleReset}>重置</Button>
+        <Button size="small" variant="contained" startIcon={<SaveIcon />} onClick={handleSave} disabled={updateMut.isPending}>
           {updateMut.isPending ? '保存中...' : '保存'}
         </Button>
-        <Button onClick={handleReset}>重置</Button>
-        <Button onClick={() => navigate(`/config/nf/${nfType}`)}>查看模式</Button>
       </Box>
 
-      <Paper sx={{ p: 2 }}>
+      {saved && <Alert severity="success" sx={{ mb: 1, py: 0 }}>配置已保存到 MongoDB，点击「同步」写入 YAML 文件</Alert>}
+
+      <Paper sx={{ p: 1.5 }}>
         <EditorObject obj={editConfig} onChange={setEditConfig} depth={0} />
       </Paper>
     </Box>
