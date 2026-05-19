@@ -48,8 +48,16 @@ function EditorValue({
   if (typeof value === 'number') {
     return (
       <TextField
-        size="small" type="number" value={value}
-        onChange={e => onChange(Number(e.target.value))}
+        size="small" value={value}
+        onChange={e => {
+          const s = e.target.value;
+          if (/^0\d+/.test(s)) {
+            onChange(s);
+          } else {
+            const n = Number(s);
+            onChange(isNaN(n) ? s : n);
+          }
+        }}
         sx={{ minWidth: 180 }}
         slotProps={{ htmlInput: { sx: { fontFamily: 'monospace', py: 0.5 } } }}
       />

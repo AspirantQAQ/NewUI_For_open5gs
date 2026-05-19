@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const NfConfig = require('../models/nf-config');
 const yaml = require('js-yaml');
+
+const YAML_DUMP_OPTS = {
+  lineWidth: -1,
+  quotingType: "'",
+};
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
@@ -161,7 +166,7 @@ router.post('/sync/:nfType', async (req, res) => {
     await backupYaml(yamlPath, sudoPassword);
 
     try {
-      const yamlContent = yaml.dump(doc.config, { lineWidth: -1 });
+      const yamlContent = yaml.dump(doc.config, YAML_DUMP_OPTS);
       await writeYaml(yamlPath, yamlContent, sudoPassword);
       doc.meta.lastSyncedAt = new Date();
       await doc.save();
@@ -196,7 +201,7 @@ router.post('/sync', async (req, res) => {
 
         try {
           await backupYaml(yamlPath, sudoPassword);
-          const yamlContent = yaml.dump(doc.config, { lineWidth: -1 });
+          const yamlContent = yaml.dump(doc.config, YAML_DUMP_OPTS);
           await writeYaml(yamlPath, yamlContent, sudoPassword);
           doc.meta.lastSyncedAt = new Date();
           await doc.save();
