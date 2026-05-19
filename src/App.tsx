@@ -4,6 +4,9 @@ import { useAuthStore } from './stores/authStore';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Subscribers from './pages/Subscribers';
+import Profiles from './pages/Profiles';
+import Accounts from './pages/Accounts';
 import GlobalSettings from './pages/config/GlobalSettings';
 import PlmnIdentity from './pages/config/PlmnIdentity';
 import SbiTopology from './pages/config/SbiTopology';
@@ -31,6 +34,9 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
+        <Route path="subscribers" element={<Subscribers />} />
+        <Route path="profiles" element={<Profiles />} />
+        <Route path="accounts" element={<Accounts />} />
         <Route path="config/global" element={<GlobalSettings />} />
         <Route path="config/plmn" element={<PlmnIdentity />} />
         <Route path="config/sbi" element={<SbiTopology />} />
