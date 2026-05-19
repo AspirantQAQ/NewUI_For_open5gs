@@ -1,10 +1,11 @@
 import { Paper, Typography, Grid, Chip, Box, CircularProgress, Button } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
+import SyncIcon from '@mui/icons-material/Sync';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
 import { useNavigate } from 'react-router-dom';
-import { useSyncStatus } from '../hooks/useNfConfig';
+import { useSyncStatus, useSyncNf } from '../hooks/useNfConfig';
 
 export default function Dashboard() {
   const { data: statusList, isLoading } = useSyncStatus();
@@ -24,36 +25,59 @@ export default function Dashboard() {
       )}
       <Grid container spacing={2}>
         {statusList?.map(s => (
-          <Grid key={s.nfType} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-            <Paper variant="outlined" sx={{ p: 2 }}>
-              <Typography sx={{ fontWeight: 'bold' }}>{s.nfType.toUpperCase()}</Typography>
-              <Chip
-                size="small"
-                icon={s.pendingSync ? <WarningIcon /> : <CheckCircleIcon />}
-                label={s.pendingSync ? '待同步' : '已同步'}
-                color={s.pendingSync ? 'warning' : 'success'}
-                sx={{ mt: 1 }}
-              />
-              <Box sx={{ mt: 1, display: 'flex', gap: 0.5 }}>
-                <Button
-                  size="small"
-                  startIcon={<VisibilityIcon />}
-                  onClick={() => navigate(`/config/nf/${s.nfType}`)}
-                >
-                  查看
-                </Button>
-                <Button
-                  size="small"
-                  startIcon={<EditIcon />}
-                  onClick={() => navigate(`/config/nf/${s.nfType}/edit`)}
-                >
-                  编辑
-                </Button>
-              </Box>
-            </Paper>
-          </Grid>
+          <NfCard key={s.nfType} nfType={s.nfType} pendingSync={s.pendingSync} navigate={navigate} />
         ))}
       </Grid>
     </Paper>
+  );
+}
+
+function NfCard({ nfType, pendingSync, navigate }: {
+  nfType: string;
+  pendingSync: boolean;
+  navigate: ReturnType<typeof useNavigate>;
+}) {
+  const syncMut = useSyncNf(nfType);
+
+  return (
+    <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Typography sx={{ fontWeight: 'bold' }}>{nfType.toUpperCase()}</Typography>
+        <Chip
+          size="small"
+          icon={pendingSync ? <WarningIcon /> : <CheckCircleIcon />}
+          label={pendingSync ? '待同步' : '已同步'}
+          color={pendingSync ? 'warning' : 'success'}
+          sx={{ mt: 1 }}
+        />
+        <Box sx={{ mt: 1, display: 'flex', gap: 0.5 }}>
+          <Button
+            size="small"
+            startIcon={<VisibilityIcon />}
+            onClick={() => navigate(`/config/nf/${nfType}`)}
+          >
+            查看
+          </Button>
+          <Button
+            size="small"
+            startIcon={<EditIcon />}
+            onClick={() => navigate(`/config/nf/${nfType}/edit`)}
+          >
+            编辑
+          </Button>
+          {pendingSync && (
+            <Button
+              size="small"
+              color="warning"
+              startIcon={<SyncIcon />}
+              disabled={syncMut.isPending}
+              onClick={() => syncMut.mutate()}
+            >
+              {syncMut.isPending ? '同步中' : '同步'}
+            </Button>
+          )}
+        </Box>
+      </Paper>
+    </Grid>
   );
 }
