@@ -10,7 +10,7 @@ const methodOverride = require('method-override');
 const morgan = require('morgan');
 const session = require('express-session');
 const mongoose = require('mongoose');
-const MongoStore = require('connect-mongo');
+const MongoStore = require('connect-mongo').default || require('connect-mongo');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const csrf = require('lusca').csrf();
@@ -30,13 +30,11 @@ mongoose.Promise = global.Promise;
 if (dev) mongoose.set('debug', true);
 
 mongoose.connect(process.env.DB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   serverSelectionTimeoutMS: 1000
 }).then(db => {
   if (dev) {
-    Account.count((err, count) => {
-      if (!err && !count) {
+    Account.countDocuments().then(count => {
+      if (!count) {
         const newAccount = new Account();
         newAccount.username = 'admin';
         newAccount.roles = ['admin'];
@@ -44,7 +42,7 @@ mongoose.connect(process.env.DB_URI, {
           if (err) console.error(err);
         });
       }
-    });
+    }).catch(err => console.error(err));
   }
 
   // Auto-import YAML configs to MongoDB on startup
