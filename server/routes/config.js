@@ -309,7 +309,7 @@ router.post('/restart', (req, res) => {
   ];
   const escapedPwd = sudoPassword.replace(/'/g, "'\\''");
   let done = 0;
-  const results: Array<{ service: string; success: boolean; error?: string }> = [];
+  const results = [];
 
   services.forEach((svc) => {
     const cmd = "echo '" + escapedPwd + "' | sudo -S systemctl restart " + svc;
