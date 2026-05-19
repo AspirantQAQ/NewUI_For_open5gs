@@ -273,15 +273,31 @@ router.post('/restart', (req, res) => {
     'open5gs-sgwud', 'open5gs-upfd', 'open5gs-hssd', 'open5gs-pcrfd',
     'open5gs-nrfd', 'open5gs-scpd', 'open5gs-seppd', 'open5gs-ausfd',
     'open5gs-udmd', 'open5gs-pcfd', 'open5gs-nssfd', 'open5gs-bsfd',
-    'open5gs-udrd', 'open5gs-webui',
+    'open5gs-udrd',
   ];
-  const cmd = "echo '" + sudoPassword.replace(/'/g, "'\\''") + "' | sudo -S systemctl restart " + services.join(' ');
-  exec(cmd, (err, stdout, stderr) => {
-    if (err) {
-      const msg = stderr.toString().replace(/.*\[sudo\] password.*\n?/, '').trim() || err.message;
-      return res.status(500).json({ error: msg });
-    }
-    res.json({ success: true, message: 'All services restarted' });
+  const escapedPwd = sudoPassword.replace(/'/g, "'\\''");
+  let done = 0;
+  const results: Array<{ service: string; success: boolean; error?: string }> = [];
+
+  services.forEach((svc) => {
+    const cmd = "echo '" + escapedPwd + "' | sudo -S systemctl restart " + svc;
+    exec(cmd, { timeout: 15000 }, (err, stdout, stderr) => {
+      const errMsg = stderr.toString().replace(/.*\[sudo\] password.*\n?/, '').trim();
+      if (err) {
+        results.push({ service: svc, success: false, error: errMsg || err.message });
+      } else {
+        results.push({ service: svc, success: true });
+      }
+      done++;
+      if (done === services.length) {
+        const failed = results.filter(r => !r.success);
+        if (failed.length === services.length) {
+          res.status(500).json({ error: failed[0].error, results });
+        } else {
+          res.json({ success: true, results, failed: failed.length });
+        }
+      }
+    });
   });
 });
 
