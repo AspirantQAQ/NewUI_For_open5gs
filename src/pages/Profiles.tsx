@@ -133,10 +133,10 @@ export default function Profiles() {
                 onChange={e => setEditItem({ ...editItem, title: e.target.value })} />
               <TextField label="K (Profile Key)" required value={editItem.security?.k || ''}
                 onChange={e => setEditItem({ ...editItem, security: { ...editItem.security!, k: e.target.value } })}
-                inputProps={{ style: { fontFamily: 'monospace' } }} />
+                slotProps={{ htmlInput: { style: { fontFamily: 'monospace' } } }} />
               <TextField label="AMF" required value={editItem.security?.amf || ''}
                 onChange={e => setEditItem({ ...editItem, security: { ...editItem.security!, amf: e.target.value } })}
-                inputProps={{ style: { fontFamily: 'monospace' } }} />
+                slotProps={{ htmlInput: { style: { fontFamily: 'monospace' } } }} />
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <FormControl sx={{ minWidth: 120 }}>
                   <InputLabel>USIM Type</InputLabel>
@@ -159,7 +159,7 @@ export default function Profiles() {
                     else sec.op = e.target.value;
                     setEditItem({ ...editItem, security: sec });
                   }}
-                  inputProps={{ style: { fontFamily: 'monospace' } }} sx={{ flex: 1 }} />
+                  slotProps={{ htmlInput: { style: { fontFamily: 'monospace' } } }} sx={{ flex: 1 }} />
               </Box>
               <FormControl>
                 <InputLabel>Subscriber Status</InputLabel>

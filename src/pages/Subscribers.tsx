@@ -124,7 +124,7 @@ export default function Subscribers() {
         <TextField
           fullWidth variant="standard" placeholder="Search IMSI or MSISDN..."
           value={search} onChange={e => setSearch(e.target.value)}
-          sx={{ mx: 1 }} InputProps={{ disableUnderline: true }}
+          sx={{ mx: 1 }} slotProps={{ input: { disableUnderline: true } }}
         />
         {search && <IconButton size="small" onClick={() => setSearch('')}><ClearIcon /></IconButton>}
       </Paper>
@@ -212,7 +212,6 @@ export default function Subscribers() {
               subscriber={editItem}
               onChange={setEditItem}
               disabled={editMode === 'update'}
-              profiles={profiles}
             />
           )}
         </DialogContent>
@@ -304,11 +303,10 @@ function SubscriberView({ subscriber: sub }: { subscriber: Subscriber }) {
   );
 }
 
-function SubscriberForm({ subscriber, onChange, disabled, profiles }: {
+function SubscriberForm({ subscriber, onChange, disabled }: {
   subscriber: Subscriber;
   onChange: (s: Subscriber) => void;
   disabled: boolean;
-  profiles: any[];
 }) {
   const s = subscriber;
   const set = (partial: Partial<Subscriber>) => onChange({ ...s, ...partial });
@@ -319,7 +317,7 @@ function SubscriberForm({ subscriber, onChange, disabled, profiles }: {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <TextField label="IMSI" required value={s.imsi} disabled={disabled}
         onChange={e => set({ imsi: e.target.value })}
-        inputProps={{ maxLength: 15 }}
+        slotProps={{ htmlInput: { maxLength: 15 } }}
         helperText={disabled ? '' : 'Digits only, max 15'} />
 
       <TextField label="MSISDN (comma separated)" value={s.msisdn?.join(', ') || ''}
@@ -327,12 +325,12 @@ function SubscriberForm({ subscriber, onChange, disabled, profiles }: {
         helperText="Up to 2 MSISDN" />
 
       <Accordion defaultExpanded>
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography fontWeight="bold">Security</Typography></AccordionSummary>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography sx={{ fontWeight: 'bold' }}>Security</Typography></AccordionSummary>
         <AccordionDetails sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField label="K (Subscriber Key)" required value={s.security?.k || ''}
-            onChange={e => setSecurity({ k: e.target.value })} inputProps={{ style: { fontFamily: 'monospace' } }} />
+            onChange={e => setSecurity({ k: e.target.value })} slotProps={{ htmlInput: { style: { fontFamily: 'monospace' } } }} />
           <TextField label="AMF" required value={s.security?.amf || ''}
-            onChange={e => setSecurity({ amf: e.target.value })} inputProps={{ style: { fontFamily: 'monospace' } }} />
+            onChange={e => setSecurity({ amf: e.target.value })} slotProps={{ htmlInput: { style: { fontFamily: 'monospace' } } }} />
           <FormControl>
             <InputLabel>USIM Type</InputLabel>
             <Select value={s.security?.opc ? 0 : 1}
@@ -350,12 +348,12 @@ function SubscriberForm({ subscriber, onChange, disabled, profiles }: {
               if (s.security?.opc !== undefined) setSecurity({ opc: e.target.value });
               else setSecurity({ op: e.target.value });
             }}
-            inputProps={{ style: { fontFamily: 'monospace' } }} />
+            slotProps={{ htmlInput: { style: { fontFamily: 'monospace' } } }} />
         </AccordionDetails>
       </Accordion>
 
       <Accordion>
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography fontWeight="bold">UE-AMBR</Typography></AccordionSummary>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography sx={{ fontWeight: 'bold' }}>UE-AMBR</Typography></AccordionSummary>
         <AccordionDetails>
           <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
             <TextField label="Downlink" type="number" value={s.ambr?.downlink?.value ?? ''}
@@ -384,7 +382,7 @@ function SubscriberForm({ subscriber, onChange, disabled, profiles }: {
 
       <Accordion defaultExpanded>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography fontWeight="bold" sx={{ flex: 1 }}>Slices ({s.slice?.length || 0})</Typography>
+          <Typography sx={{ fontWeight: 'bold', flex: 1 }}>Slices ({s.slice?.length || 0})</Typography>
         </AccordionSummary>
         <AccordionDetails>
           {s.slice?.map((slice, si) => (
