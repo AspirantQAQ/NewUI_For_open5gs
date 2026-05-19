@@ -23,6 +23,78 @@ function getYamlPath(nfType) {
   return path.join(YAML_BASE_PATH, filename);
 }
 
+function sudoWrite(filePath, content, sudoPassword, callback) {
+  const escaped = content.replace(/'/g, "'\\''");
+  const cmd = "echo '" + sudoPassword.replace(/'/g, "'\\''") + "' | sudo -S sh -c 'cat > " + filePath + "'";
+  const child = exec(cmd, (err, stdout, stderr) => {
+    if (err) {
+      const msg = stderr.toString().replace(/.*\[sudo\] password.*\n?/, '').trim() || err.message;
+      callback(msg);
+    } else {
+      callback(null);
+    }
+  });
+  child.stdin.write(content);
+  child.stdin.end();
+}
+
+function writeYaml(yamlPath, yamlContent, sudoPassword) {
+  return new Promise((resolve, reject) => {
+    if (sudoPassword) {
+      sudoWrite(yamlPath, yamlContent, sudoPassword, (err) => {
+        if (err) reject(new Error(err));
+        else resolve();
+      });
+    } else {
+      try {
+        fs.writeFileSync(yamlPath, yamlContent, 'utf8');
+        resolve();
+      } catch (e) {
+        reject(e);
+      }
+    }
+  });
+}
+
+function backupYaml(yamlPath, sudoPassword) {
+  return new Promise((resolve, reject) => {
+    if (fs.existsSync(yamlPath)) {
+      if (sudoPassword) {
+        const cmd = "echo '" + sudoPassword.replace(/'/g, "'\\''") + "' | sudo -S cp " + yamlPath + " " + yamlPath + ".bak";
+        exec(cmd, (err) => {
+          if (err) reject(new Error('Backup failed'));
+          else resolve();
+        });
+      } else {
+        try {
+          fs.copyFileSync(yamlPath, yamlPath + '.bak');
+          resolve();
+        } catch (e) {
+          reject(e);
+        }
+      }
+    } else {
+      resolve();
+    }
+  });
+}
+
+function rollbackYaml(yamlPath, sudoPassword) {
+  return new Promise((resolve) => {
+    const bakPath = yamlPath + '.bak';
+    if (fs.existsSync(bakPath)) {
+      if (sudoPassword) {
+        exec("echo '" + sudoPassword.replace(/'/g, "'\\''") + "' | sudo -S cp " + bakPath + " " + yamlPath, () => resolve());
+      } else {
+        try { fs.copyFileSync(bakPath, yamlPath); } catch (e) { /* ignore */ }
+        resolve();
+      }
+    } else {
+      resolve();
+    }
+  });
+}
+
 // GET /api/config/nfs — list all NF configs (summary)
 router.get('/nfs', async (req, res) => {
   try {
@@ -76,6 +148,7 @@ router.put('/nfs/:nfType', async (req, res) => {
 router.post('/sync/:nfType', async (req, res) => {
   try {
     const { nfType } = req.params;
+    const { sudoPassword } = req.body;
     const doc = await NfConfig.findOne({ nfType });
     if (!doc) return res.status(404).json({ error: 'NF config not found in DB' });
 
@@ -85,22 +158,16 @@ router.post('/sync/:nfType', async (req, res) => {
       return res.status(403).json({ error: 'Path traversal not allowed' });
     }
 
-    // Backup
-    if (fs.existsSync(yamlPath)) {
-      fs.copyFileSync(yamlPath, yamlPath + '.bak');
-    }
+    await backupYaml(yamlPath, sudoPassword);
 
     try {
       const yamlContent = yaml.dump(doc.config, { lineWidth: -1 });
-      fs.writeFileSync(yamlPath, yamlContent, 'utf8');
+      await writeYaml(yamlPath, yamlContent, sudoPassword);
       doc.meta.lastSyncedAt = new Date();
       await doc.save();
       res.json({ success: true, nfType, syncedAt: doc.meta.lastSyncedAt });
     } catch (writeErr) {
-      // Rollback
-      if (fs.existsSync(yamlPath + '.bak')) {
-        fs.copyFileSync(yamlPath + '.bak', yamlPath);
-      }
+      await rollbackYaml(yamlPath, sudoPassword);
       res.status(500).json({ error: 'YAML write failed: ' + writeErr.message });
     }
   } catch (err) {
@@ -111,6 +178,7 @@ router.post('/sync/:nfType', async (req, res) => {
 // POST /api/config/sync — sync all modified NFs
 router.post('/sync', async (req, res) => {
   try {
+    const { sudoPassword } = req.body;
     const configs = await NfConfig.find();
     const results = [];
 
@@ -127,18 +195,14 @@ router.post('/sync', async (req, res) => {
         }
 
         try {
-          if (fs.existsSync(yamlPath)) {
-            fs.copyFileSync(yamlPath, yamlPath + '.bak');
-          }
+          await backupYaml(yamlPath, sudoPassword);
           const yamlContent = yaml.dump(doc.config, { lineWidth: -1 });
-          fs.writeFileSync(yamlPath, yamlContent, 'utf8');
+          await writeYaml(yamlPath, yamlContent, sudoPassword);
           doc.meta.lastSyncedAt = new Date();
           await doc.save();
           results.push({ nfType: doc.nfType, success: true });
         } catch (writeErr) {
-          if (fs.existsSync(yamlPath + '.bak')) {
-            fs.copyFileSync(yamlPath + '.bak', yamlPath);
-          }
+          await rollbackYaml(yamlPath, sudoPassword);
           results.push({ nfType: doc.nfType, success: false, error: writeErr.message });
         }
       }
@@ -203,6 +267,7 @@ router.get('/status', async (req, res) => {
 
 // POST /api/config/restart — restart all open5gs services
 router.post('/restart', (req, res) => {
+  const { sudoPassword } = req.body;
   const services = [
     'open5gs-mmed', 'open5gs-sgwcd', 'open5gs-smfd', 'open5gs-amfd',
     'open5gs-sgwud', 'open5gs-upfd', 'open5gs-hssd', 'open5gs-pcrfd',
@@ -210,10 +275,11 @@ router.post('/restart', (req, res) => {
     'open5gs-udmd', 'open5gs-pcfd', 'open5gs-nssfd', 'open5gs-bsfd',
     'open5gs-udrd', 'open5gs-webui',
   ];
-  const cmd = 'sudo systemctl restart ' + services.join(' ');
+  const cmd = "echo '" + sudoPassword.replace(/'/g, "'\\''") + "' | sudo -S systemctl restart " + services.join(' ');
   exec(cmd, (err, stdout, stderr) => {
     if (err) {
-      return res.status(500).json({ error: err.message, stderr: stderr.toString() });
+      const msg = stderr.toString().replace(/.*\[sudo\] password.*\n?/, '').trim() || err.message;
+      return res.status(500).json({ error: msg });
     }
     res.json({ success: true, message: 'All services restarted' });
   });

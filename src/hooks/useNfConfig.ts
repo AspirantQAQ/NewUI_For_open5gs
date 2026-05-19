@@ -31,7 +31,7 @@ export function useUpdateNfConfig(nfType: string) {
 export function useSyncNf(nfType: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => configService.syncNfConfig(nfType),
+    mutationFn: (sudoPassword?: string) => configService.syncNfConfig(nfType, sudoPassword),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['syncStatus'] });
       queryClient.invalidateQueries({ queryKey: ['nfConfig', nfType] });
@@ -42,7 +42,7 @@ export function useSyncNf(nfType: string) {
 export function useSyncAll() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: configService.syncAllNfConfigs,
+    mutationFn: (sudoPassword?: string) => configService.syncAllNfConfigs(sudoPassword),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['syncStatus'] });
     },
@@ -51,6 +51,6 @@ export function useSyncAll() {
 
 export function useRestartServices() {
   return useMutation({
-    mutationFn: configService.restartServices,
+    mutationFn: (sudoPassword: string) => configService.restartServices(sudoPassword),
   });
 }

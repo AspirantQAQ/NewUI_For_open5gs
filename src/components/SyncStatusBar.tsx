@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Chip, Button, Dialog, DialogTitle, DialogContent, DialogActions, Typography, Alert } from '@mui/material';
+import { Box, Chip, Button, Dialog, DialogTitle, DialogContent, DialogActions, Typography, Alert, TextField } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
@@ -14,6 +14,7 @@ export default function SyncStatusBar({ nfType }: SyncStatusBarProps) {
   const syncNf = useSyncNf(nfType || '');
   const syncAll = useSyncAll();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [pwd, setPwd] = useState('');
 
   const pendingCount = statusList?.filter(s => s.pendingSync).length || 0;
 
@@ -28,10 +29,26 @@ export default function SyncStatusBar({ nfType }: SyncStatusBarProps) {
           <Chip icon={<CheckCircleIcon />} label="已同步" color="success" size="small" />
         )}
         {pending && (
-          <Button size="small" variant="outlined" startIcon={<SyncIcon />}
-            onClick={() => syncNf.mutate()} disabled={syncNf.isPending}>
-            应用到文件
-          </Button>
+          <>
+            <Button size="small" variant="outlined" startIcon={<SyncIcon />}
+              onClick={() => setDialogOpen(true)} disabled={syncNf.isPending}>
+              应用到文件
+            </Button>
+            <Dialog open={dialogOpen} onClose={() => { setDialogOpen(false); setPwd(''); }}>
+              <DialogTitle>同步 {nfType.toUpperCase()}</DialogTitle>
+              <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 300 }}>
+                <Typography variant="body2">将该 NF 配置写入 YAML 文件</Typography>
+                <TextField size="small" type="password" label="sudo 密码" value={pwd} onChange={e => setPwd(e.target.value)} autoFocus />
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => { setDialogOpen(false); setPwd(''); }}>取消</Button>
+                <Button variant="contained" disabled={!pwd || syncNf.isPending}
+                  onClick={() => { syncNf.mutate(pwd); setDialogOpen(false); setPwd(''); }}>
+                  确认
+                </Button>
+              </DialogActions>
+            </Dialog>
+          </>
         )}
       </Box>
     );
@@ -52,15 +69,18 @@ export default function SyncStatusBar({ nfType }: SyncStatusBarProps) {
           </Button>
         )}
       </Box>
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
+      <Dialog open={dialogOpen} onClose={() => { setDialogOpen(false); setPwd(''); }}>
         <DialogTitle>确认应用配置</DialogTitle>
-        <DialogContent>
-          <Typography>将 {pendingCount} 个 NF 的配置写入 YAML 文件。原文件将备份为 .bak。</Typography>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 300 }}>
+          <Typography variant="body2">将 {pendingCount} 个 NF 的配置写入 YAML 文件。原文件将备份为 .bak。</Typography>
+          <TextField size="small" type="password" label="sudo 密码" value={pwd} onChange={e => setPwd(e.target.value)} autoFocus />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>取消</Button>
-          <Button variant="contained" onClick={() => { syncAll.mutate(); setDialogOpen(false); }}
-            disabled={syncAll.isPending}>确认应用</Button>
+          <Button onClick={() => { setDialogOpen(false); setPwd(''); }}>取消</Button>
+          <Button variant="contained" disabled={!pwd || syncAll.isPending}
+            onClick={() => { syncAll.mutate(pwd); setDialogOpen(false); setPwd(''); }}>
+            确认应用
+          </Button>
         </DialogActions>
       </Dialog>
       {(syncNf.isError || syncAll.isError) && (

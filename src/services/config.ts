@@ -16,18 +16,18 @@ export async function updateNfConfig(nfType: string, config: Record<string, unkn
   return res.data;
 }
 
-export async function syncNfConfig(nfType: string): Promise<{ success: boolean; nfType: string; syncedAt: string }> {
-  const res = await api.post(`/config/sync/${nfType}`);
+export async function syncNfConfig(nfType: string, sudoPassword?: string): Promise<{ success: boolean; nfType: string; syncedAt: string }> {
+  const res = await api.post(`/config/sync/${nfType}`, { sudoPassword });
   return res.data;
 }
 
-export async function syncAllNfConfigs(): Promise<{ results: SyncResult[] }> {
-  const res = await api.post('/config/sync');
+export async function syncAllNfConfigs(sudoPassword?: string): Promise<{ results: SyncResult[] }> {
+  const res = await api.post('/config/sync', { sudoPassword });
   return res.data;
 }
 
-export async function restartServices(): Promise<{ success: boolean; message: string }> {
-  const res = await api.post('/config/restart');
+export async function restartServices(sudoPassword: string): Promise<{ success: boolean; message: string }> {
+  const res = await api.post('/config/restart', { sudoPassword });
   return res.data;
 }
 
