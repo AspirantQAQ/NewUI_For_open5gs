@@ -1,4 +1,5 @@
-import { Paper, Typography, Grid, Chip, Box, CircularProgress, Button } from '@mui/material';
+import { useState } from 'react';
+import { Paper, Typography, Grid, Chip, Box, CircularProgress, Button, Snackbar, Alert } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import SyncIcon from '@mui/icons-material/Sync';
@@ -38,6 +39,15 @@ function NfCard({ nfType, pendingSync, navigate }: {
   navigate: ReturnType<typeof useNavigate>;
 }) {
   const syncMut = useSyncNf(nfType);
+  const [error, setError] = useState('');
+
+  const handleSync = () => {
+    setError('');
+    syncMut.mutate(undefined, {
+      onSuccess: () => setError(''),
+      onError: (e: any) => setError(e.response?.data?.error || e.message || '同步失败'),
+    });
+  };
 
   return (
     <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
@@ -71,13 +81,23 @@ function NfCard({ nfType, pendingSync, navigate }: {
               color="warning"
               startIcon={<SyncIcon />}
               disabled={syncMut.isPending}
-              onClick={() => syncMut.mutate()}
+              onClick={handleSync}
             >
               {syncMut.isPending ? '同步中' : '同步'}
             </Button>
           )}
         </Box>
       </Paper>
+      <Snackbar
+        open={!!error}
+        autoHideDuration={5000}
+        onClose={() => setError('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="error" onClose={() => setError('')}>
+          {nfType.toUpperCase()} 同步失败: {error}
+        </Alert>
+      </Snackbar>
     </Grid>
   );
 }
