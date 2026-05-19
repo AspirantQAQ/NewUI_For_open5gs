@@ -20,6 +20,23 @@ function cloneDeep(val: unknown): unknown {
   return JSON.parse(JSON.stringify(val));
 }
 
+function DeleteBtn({ onClick }: { onClick: () => void }) {
+  return (
+    <IconButton
+      size="small"
+      onClick={onClick}
+      sx={{
+        p: 0.25,
+        opacity: 0.15,
+        transition: 'opacity 0.2s',
+        '&:hover': { opacity: 1 },
+      }}
+    >
+      <DeleteIcon sx={{ fontSize: 14 }} />
+    </IconButton>
+  );
+}
+
 function EditorValue({
   value,
   onChange,
@@ -97,15 +114,13 @@ function EditorValue({
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
         {value.map((item, i) => (
           <Box key={i} sx={{ pl: 1, borderLeft: '2px solid', borderColor: 'divider' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.25 }}>
               <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>[{i}]</Typography>
-              <IconButton size="small" sx={{ p: 0.25 }} onClick={() => {
+              <DeleteBtn onClick={() => {
                 const newArr = [...value];
                 newArr.splice(i, 1);
                 onChange(newArr);
-              }}>
-                <DeleteIcon sx={{ fontSize: 14 }} />
-              </IconButton>
+              }} />
             </Box>
             {isObject(item) ? (
               <EditorObject obj={item} onChange={newObj => {
@@ -183,16 +198,16 @@ function EditorObject({
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <EditorValue value={val} onChange={newVal => updateKey(key, newVal)} depth={depth} />
               </Box>
-              <IconButton size="small" sx={{ p: 0.25, mt: nested ? 0.5 : 0 }} onClick={() => removeKey(key)}>
-                <DeleteIcon sx={{ fontSize: 14 }} />
-              </IconButton>
+              {depth > 0 && <DeleteBtn onClick={() => removeKey(key)} />}
             </Box>
           </Box>
         );
       })}
-      <Button size="small" startIcon={<AddIcon />} onClick={addKey} sx={{ alignSelf: 'flex-start', mt: 0.5, fontSize: 12 }}>
-        添加字段
-      </Button>
+      {depth > 0 && (
+        <Button size="small" startIcon={<AddIcon />} onClick={addKey} sx={{ alignSelf: 'flex-start', mt: 0.5, fontSize: 12 }}>
+          添加字段
+        </Button>
+      )}
     </Box>
   );
 }
